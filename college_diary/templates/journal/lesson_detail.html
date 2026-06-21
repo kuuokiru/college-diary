@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load journal_tags %}
+{% block title %}{{ lesson.subject }} — {{ lesson.date }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ lesson.subject }} | {{ lesson.classroom }} | {{ lesson.date }}</h1>
+  <a href="/journal/" class="btn btn-sm btn-primary">← Назад</a>
+</div>
+
+<div class="card" style="margin-bottom:1rem">
+  <b>Тема:</b> {{ lesson.topic|default:"не указана" }}<br>
+  <b>Домашнее задание:</b> {{ lesson.homework|default:"не задано" }}<br>
+  <b>Преподаватель:</b> {{ lesson.teacher.get_full_name|default:lesson.teacher.username }}
+</div>
+
+{% if user.is_teacher or user.is_staff %}
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-title">Журнал занятия</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Студент</th>
+          <th>Посещаемость</th>
+          <th>Оценка (1–5)</th>
+          <th>Комментарий</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for student in students %}
+      {% with g=grades_map|get_item:student.id a=attendance_map|get_item:student.id %}
+      <tr>
+        <td><b>{{ student.last_name }}</b> {{ student.first_name }}</td>
+        <td>
+          <div class="att-radio-group">
+            <input type="radio" name="att_{{ student.id }}" id="p_{{ student.id }}" value="P" {% if not a or a.status == 'P' %}checked{% endif %}>
+            <label for="p_{{ student.id }}" class="p">✅ Присут.</label>
+            <input type="radio" name="att_{{ student.id }}" id="l_{{ student.id }}" value="L" {% if a and a.status == 'L' %}checked{% endif %}>
+            <label for="l_{{ student.id }}" class="l">⏰ Опоздал</label>
+            <input type="radio" name="att_{{ student.id }}" id="a_{{ student.id }}" value="A" {% if a and a.status == 'A' %}checked{% endif %}>
+            <label for="a_{{ student.id }}" class="a">❌ Отсутст.</label>
+          </div>
+        </td>
+        <td>
+          <input class="grade-input" type="number" name="grade_{{ student.id }}" min="1" max="5"
+            value="{% if g %}{{ g.value }}{% endif %}">
+        </td>
+        <td>
+          <input class="form-control" style="max-width:200px" type="text"
+            name="comment_{{ student.id }}" placeholder="Комментарий"
+            value="{% if g %}{{ g.comment }}{% endif %}">
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="4" style="color:var(--muted)">В группе нет студентов</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if students %}
+    <div style="margin-top:1rem">
+      <button type="submit" class="btn btn-success">💾 Сохранить</button>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{% else %}
+<!-- Студент видит свои данные -->
+<div class="card">
+  <div class="card-title">Ваши данные по занятию</div>
+  {% with g=grades_map|get_item:user.id a=attendance_map|get_item:user.id %}
+  <p><b>Посещаемость:</b>
+    {% if a %}<span class="att-badge att-{{ a.status }}">{{ a.get_status_display }}</span>{% else %}—{% endif %}
+  </p>
+  <p style="margin-top:.5rem"><b>Оценка:</b>
+    {% if g %}<span class="badge badge-{{ g.value }}">{{ g.value }}</span> {{ g.comment }}{% else %}—{% endif %}
+  </p>
+  {% endwith %}
+</div>
+{% endif %}
+{% endblock %}

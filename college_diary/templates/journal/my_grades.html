@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Мои оценки{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Мои оценки</h1></div>
+
+{% if grouped %}
+  {% for subject, grades in grouped.items %}
+  <div class="subject-section">
+    <h3>{{ subject }}</h3>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr><th>Дата</th><th>Тема урока</th><th>Оценка</th><th>Комментарий</th></tr></thead>
+        <tbody>
+        {% for g in grades %}
+        <tr>
+          <td>{{ g.lesson.date }}</td>
+          <td>{{ g.lesson.topic|default:"—" }}</td>
+          <td><span class="badge badge-{{ g.value }}">{{ g.value }}</span></td>
+          <td>{{ g.comment|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card"><p style="color:#94a3b8">У вас пока нет оценок.</p></div>
+{% endif %}
+{% endblock %}

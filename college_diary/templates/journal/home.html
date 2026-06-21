@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+
+{% if user.is_staff or user.role == 'admin' %}
+<!-- ADMIN -->
+<div class="page-header"><h1>Панель администратора</h1></div>
+<div class="stats-row">
+  <div class="stat-card"><div class="num">{{ total_students }}</div><div class="lbl">Студентов</div></div>
+  <div class="stat-card"><div class="num">{{ total_teachers }}</div><div class="lbl">Преподавателей</div></div>
+  <div class="stat-card"><div class="num">{{ total_lessons }}</div><div class="lbl">Занятий</div></div>
+</div>
+<div class="card">
+  <div class="card-title">Группы</div>
+  <table>
+    <thead><tr><th>Группа</th><th>Студентов</th><th></th></tr></thead>
+    <tbody>
+    {% for c in classes %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>{{ c.students.count }}</td>
+      <td><a href="/group/{{ c.pk }}/stats/" class="btn btn-sm btn-primary">Статистика</a></td>
+    </tr>
+    {% empty %}<tr><td colspan="3" style="color:var(--muted)">Группы не добавлены</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif user.is_teacher %}
+<!-- TEACHER -->
+<div class="page-header">
+  <h1>Добро пожаловать, {{ user.first_name|default:user.username }}!</h1>
+  <a href="/journal/add/" class="btn btn-primary">+ Добавить занятие</a>
+</div>
+
+{% if class_stats %}
+<div class="stats-row">
+  {% for s in class_stats %}
+  <div class="stat-card">
+    <div class="num">{{ s.avg }}</div>
+    <div class="lbl">{{ s.name }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-title">Последние занятия</div>
+  <table>
+    <thead><tr><th>Дата</th><th>Предмет</th><th>Группа</th><th>Тема</th><th></th></tr></thead>
+    <tbody>
+    {% for l in lessons %}
+    <tr>
+      <td>{{ l.date }}</td><td>{{ l.subject }}</td><td>{{ l.classroom }}</td>
+      <td>{{ l.topic|default:"—" }}</td>
+      <td><a href="/journal/{{ l.pk }}/" class="btn btn-sm btn-primary">Открыть</a></td>
+    </tr>
+    {% empty %}<tr><td colspan="5" style="color:var(--muted)">Занятий пока нет</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif user.is_student %}
+<!-- STUDENT -->
+<div class="page-header"><h1>Привет, {{ user.first_name|default:user.username }}! 👋</h1></div>
+
+<!-- Средние баллы -->
+<div class="stats-row">
+{% for a in avg_grades %}
+  <div class="stat-card">
+    <div class="num" style="color:{% if a.avg >= 4.5 %}#16a34a{% elif a.avg >= 3.5 %}#2563eb{% elif a.avg >= 2.5 %}#d97706{% else %}#dc2626{% endif %}">
+      {{ a.avg|floatformat:1 }}
+    </div>
+    <div class="lbl">{{ a.lesson__subject__name|truncatechars:22 }}</div>
+  </div>
+{% empty %}
+  <div class="stat-card"><div class="num">—</div><div class="lbl">Оценок ещё нет</div></div>
+{% endfor %}
+</div>
+
+<!-- График + посещаемость -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+
+  <div class="card">
+    <div class="card-title">📈 Успеваемость по неделям</div>
+    <div class="chart-wrap">
+      <canvas id="gradeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✅ Посещаемость</div>
+    <div class="ring-wrap">
+      <div class="ring">
+        <svg viewBox="0 0 100 100" width="100" height="100">
+          <circle class="ring-bg" cx="50" cy="50" r="45"/>
+          <circle class="ring-fill" cx="50" cy="50" r="45"
+            stroke="{% if att_pct >= 80 %}#16a34a{% elif att_pct >= 60 %}#d97706{% else %}#dc2626{% endif %}"
+            stroke-dasharray="282.7"
+            stroke-dashoffset="{{ att_pct|default:100 }}"
+            id="ringFill"/>
+        </svg>
+        <div class="ring-text">
+          <span class="big">{{ att_pct }}%</span>
+          <span class="small">явка</span>
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom:.5rem"><span class="att-badge att-P">✅ {{ att_present }} — присутствовал</span></div>
+        <div style="margin-bottom:.5rem"><span class="att-badge att-L">⏰ {{ att_late }} — опоздал</span></div>
+        <div><span class="att-badge att-A">❌ {{ att_absent }} — отсутствовал</span></div>
+      </div>
+    </div>
+    <a href="/attendance/" class="btn btn-sm btn-primary" style="margin-top:1rem">Подробнее</a>
+  </div>
+</div>
+
+<!-- Последние оценки -->
+<div class="card">
+  <div class="card-title">Последние оценки</div>
+  <table>
+    <thead><tr><th>Дата</th><th>Предмет</th><th>Оценка</th><th>Комментарий</th></tr></thead>
+    <tbody>
+    {% for g in grades %}
+    <tr>
+      <td>{{ g.lesson.date }}</td>
+      <td>{{ g.lesson.subject }}</td>
+      <td><span class="badge badge-{{ g.value }}">{{ g.value }}</span></td>
+      <td>{{ g.comment|default:"—" }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="4" style="color:var(--muted)">Оценок пока нет</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+// График успеваемости
+const labels = {{ chart_labels|safe }};
+const data   = {{ chart_data|safe }};
+const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+const textColor = isDark ? '#94a3b8' : '#64748b';
+
+new Chart(document.getElementById('gradeChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Средний балл',
+      data,
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37,99,235,.1)',
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: '#2563eb',
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      spanGaps: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 1, max: 5, ticks: { stepSize: 1, color: textColor }, grid: { color: isDark ? '#334155' : '#e2e8f0' } },
+      x: { ticks: { color: textColor }, grid: { display: false } }
+    }
+  }
+});
+
+// Кольцо посещаемости
+const pct = {{ att_pct|default:100 }};
+const circumference = 282.7;
+const offset = circumference - (pct / 100) * circumference;
+document.getElementById('ringFill').style.strokeDashoffset = offset;
+</script>
+
+{% endif %}
+{% endblock %}

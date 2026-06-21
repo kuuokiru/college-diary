@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Расписание{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Расписание уроков</h1></div>
+
+{% if grouped %}
+  {% for date, lessons in grouped.items %}
+  <div class="schedule-day">
+    <h3>{{ date }}</h3>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr><th>#</th><th>Предмет</th><th>Класс</th><th>Учитель</th><th>Тема</th><th>Домашнее задание</th></tr></thead>
+        <tbody>
+        {% for l in lessons %}
+        <tr class="lesson-row">
+          <td>{{ l.period_number }}</td>
+          <td><b>{{ l.subject }}</b></td>
+          <td>{{ l.classroom }}</td>
+          <td>{{ l.teacher.get_full_name|default:l.teacher.username }}</td>
+          <td>{{ l.topic|default:"—" }}</td>
+          <td>{{ l.homework|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card"><p style="color:#94a3b8">Расписание пока не добавлено.</p></div>
+{% endif %}
+{% endblock %}

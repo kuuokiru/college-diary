@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Добавить урок{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Добавить урок</h1>
+  <a href="/journal/" class="btn btn-sm btn-primary">← Назад</a>
+</div>
+<div class="card" style="max-width:600px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>Класс</label>
+        <select class="form-control" name="classroom" required>
+          <option value="">— выберите —</option>
+          {% for c in classrooms %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Предмет</label>
+        <select class="form-control" name="subject" required>
+          <option value="">— выберите —</option>
+          {% for s in subjects %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Дата</label>
+        <input class="form-control" type="date" name="date" required>
+      </div>
+      <div class="form-group">
+        <label>Номер урока</label>
+        <input class="form-control" type="number" name="period_number" min="1" max="8" value="1">
+      </div>
+    </div>
+    {% if user.is_staff %}
+    <div class="form-group">
+      <label>Учитель</label>
+      <select class="form-control" name="teacher">
+        {% for t in teachers %}<option value="{{ t.pk }}">{{ t.get_full_name|default:t.username }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="form-group">
+      <label>Тема урока</label>
+      <input class="form-control" type="text" name="topic" placeholder="Необязательно">
+    </div>
+    <div class="form-group">
+      <label>Домашнее задание</label>
+      <textarea class="form-control" name="homework" rows="3" placeholder="Необязательно"></textarea>
+    </div>
+    <button class="btn btn-success" type="submit">Добавить урок</button>
+  </form>
+</div>
+{% endblock %}

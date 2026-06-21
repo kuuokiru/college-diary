@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Статистика — {{ classroom.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📊 Группа {{ classroom.name }}</h1>
+  <a href="/" class="btn btn-sm btn-primary">← Назад</a>
+</div>
+
+<div class="card">
+  <div class="card-title">Успеваемость и посещаемость студентов</div>
+  <table>
+    <thead>
+      <tr><th>Студент</th><th>Средний балл</th><th>Явка</th><th>Пропусков</th></tr>
+    </thead>
+    <tbody>
+    {% for s in student_stats %}
+    <tr>
+      <td><b>{{ s.student.last_name }}</b> {{ s.student.first_name }}</td>
+      <td>
+        <span style="font-weight:700;color:{% if s.avg == '—' %}var(--muted){% elif s.avg >= 4.5 %}var(--success){% elif s.avg >= 3.5 %}var(--primary){% elif s.avg >= 2.5 %}var(--warning){% else %}var(--danger){% endif %}">
+          {{ s.avg }}
+        </span>
+      </td>
+      <td>
+        {{ s.pct }}%
+        <div class="progress-wrap">
+          <div class="progress-bar {% if s.pct < 60 %}danger{% endif %}" style="width:{{ s.pct }}%"></div>
+        </div>
+      </td>
+      <td style="color:{% if s.absent > 3 %}var(--danger){% else %}var(--text){% endif %}">
+        {{ s.absent }} / {{ s.total }}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" style="color:var(--muted)">Студентов нет</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

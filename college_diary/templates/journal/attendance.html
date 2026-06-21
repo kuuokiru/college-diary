@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Посещаемость{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📋 Моя посещаемость</h1></div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="num" style="color:var(--success)">{{ present }}</div><div class="lbl">✅ Присутствовал</div></div>
+  <div class="stat-card"><div class="num" style="color:var(--warning)">{{ late }}</div><div class="lbl">⏰ Опоздал</div></div>
+  <div class="stat-card"><div class="num" style="color:var(--danger)">{{ absent }}</div><div class="lbl">❌ Отсутствовал</div></div>
+  <div class="stat-card">
+    <div class="num" style="color:{% if pct >= 80 %}var(--success){% elif pct >= 60 %}var(--warning){% else %}var(--danger){% endif %}">{{ pct }}%</div>
+    <div class="lbl">Явка</div>
+    <div class="progress-wrap" style="margin-top:.5rem">
+      <div class="progress-bar {% if pct < 60 %}danger{% endif %}" style="width:{{ pct }}%"></div>
+    </div>
+  </div>
+</div>
+
+{% if grouped %}
+  {% for subject, records in grouped.items %}
+  <div class="subject-section">
+    <h3>{{ subject }}</h3>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr><th>Дата</th><th>Тема</th><th>Статус</th><th>Примечание</th></tr></thead>
+        <tbody>
+        {% for a in records %}
+        <tr>
+          <td>{{ a.lesson.date }}</td>
+          <td>{{ a.lesson.topic|default:"—" }}</td>
+          <td><span class="att-badge att-{{ a.status }}">{{ a.get_status_display }}</span></td>
+          <td>{{ a.note|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card"><p style="color:var(--muted)">Данных о посещаемости пока нет.</p></div>
+{% endif %}
+{% endblock %}

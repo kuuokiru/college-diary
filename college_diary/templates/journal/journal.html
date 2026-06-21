@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Журнал{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Журнал уроков</h1>
+  <a href="/journal/add/" class="btn btn-primary">+ Добавить урок</a>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Дата</th><th>Урок</th><th>Предмет</th><th>Класс</th><th>Учитель</th><th>Тема</th><th></th></tr></thead>
+    <tbody>
+    {% for l in lessons %}
+    <tr>
+      <td>{{ l.date }}</td>
+      <td>{{ l.period_number }}</td>
+      <td>{{ l.subject }}</td>
+      <td>{{ l.classroom }}</td>
+      <td>{{ l.teacher.get_full_name|default:l.teacher.username }}</td>
+      <td>{{ l.topic|default:"—" }}</td>
+      <td><a href="/journal/{{ l.pk }}/" class="btn btn-sm btn-primary">Оценки</a></td>
+    </tr>
+    {% empty %}<tr><td colspan="7" style="color:#94a3b8">Уроков нет</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
